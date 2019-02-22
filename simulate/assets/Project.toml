@@ -1,0 +1,4 @@
+[deps]
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+ParserSchneider = "e98ff1d4-2307-11e9-168d-f14c22eb4d01"
+StoOpt = "b078af00-22e2-11e9-2e46-77c5cd6e0fea"

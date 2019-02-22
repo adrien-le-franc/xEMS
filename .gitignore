@@ -1,0 +1,11 @@
+# ignore files inside data folders
+data/*
+!data/.gitkeep
+
+all_results/*
+!all_results/.gitkeep
+
+output/*
+!output/.gitkeep
+
+simulate/assets/vopt/*
