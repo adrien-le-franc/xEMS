@@ -1,6 +1,7 @@
 from copy import deepcopy
 import os
 from pathlib import Path
+import time
 
 import numpy as np
 import pandas as pd
@@ -150,6 +151,9 @@ class Simulation(object):
 
 
 if __name__ == '__main__':
+
+    start = time.time()
+
     simulation_dir = (Path(__file__)/os.pardir/os.pardir).resolve()
     data_dir = simulation_dir/'data'
     output_dir = simulation_dir/'output'
@@ -217,3 +221,11 @@ if __name__ == '__main__':
     results_df = pd.DataFrame(results).set_index('run_id')
     results_df = results_df[['site_id', 'battery_id', 'period_id', 'money_spent', 'money_no_batt', 'score']]
     results_df.to_csv(output_dir/'results.csv')
+
+    elapsed = time.time() - start
+    hour = int(elapsed/3600.)
+    minute = int(elapsed/60.)
+    second = int(elapsed)%60
+    print("\n")
+    print("Simulation completed in - {}h {}min {}s".format(hour, minute, second))
+    print("\n")
