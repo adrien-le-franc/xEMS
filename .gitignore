@@ -9,3 +9,5 @@ output/*
 !output/.gitkeep
 
 simulate/assets/vopt/*
+
+*.pyc

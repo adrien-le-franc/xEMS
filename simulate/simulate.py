@@ -59,7 +59,7 @@ class Simulation(object):
             cost that would have been incurred with no battery.
         """
 
-        for current_time, timestep in tqdm(self.data.iterrows(), total=self.data.shape[0], desc=' > > > > timesteps\t'):
+        for current_time, timestep in self.data.iterrows():
             # can't calculate results without actual, so skip (should only be last row)
             if pd.notnull(timestep.actual_consumption):
                 self.simulate_timestep(current_time, timestep) 

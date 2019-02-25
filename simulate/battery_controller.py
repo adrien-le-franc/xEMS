@@ -55,7 +55,7 @@ class BatteryContoller(object):
 
         self.url = url
 
-        #self.launch_server()
+        self.launch_server()
         self.init_paths()
 
     def launch_server(self):
@@ -72,8 +72,8 @@ class BatteryContoller(object):
 
         # wait for server deployment
         while(result != 0):
-            print("Waiting for server at {}".format(self.url))
-            time.sleep(1)
+            print("Waiting for server at {}, should take about 5 seconds".format(self.url))
+            time.sleep(2)
             result = sock.connect_ex(("0.0.0.0", 8000))
 
     def init_paths(self):
@@ -172,15 +172,8 @@ class BatteryContoller(object):
         r = requests.get(self.url+"/compute_soc", params=args)
         return r.json()
 
-    def propose_state_of_charge(self,
-                                timestamp,
-                                battery,
-                                actual_previous_load,
-                                actual_previous_pv_production,
-                                price_buy,
-                                price_sell,
-                                load_forecast,
-                                pv_forecast):
+    def propose_state_of_charge(self, timestamp, battery, actual_previous_load, 
+        actual_previous_pv_production, price_buy, price_sell, load_forecast, pv_forecast):
 
         date = str(timestamp).split(" ")
         day = date[0]
@@ -200,14 +193,8 @@ class BatteryContoller(object):
                     self.price_id, season, day))
 
             if os.path.isfile(self.current_vopt_path):
-                print("\n")
-                print("load vopt")
-                print("\n")
                 self.load_vopt()
             else:
-                print("\n")
-                print("compute vopt")
-                print("\n")
                 self.compute_vopt(season, day)
         
         h = int(timer[0:2])
@@ -221,10 +208,4 @@ class BatteryContoller(object):
 
         target_soc = self.get_soc(current_soc, forecast_noise_15, int(t))
 
-        print(target_soc)       
-
-
-        
-        
-
-        return 1.0
+        return target_soc
