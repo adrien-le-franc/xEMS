@@ -53,7 +53,7 @@ class BatteryContoller(object):
         self.method = method
         self.url = url
 
-        #self.launch_server()
+        self.launch_server()
         self.init_paths()
 
     def launch_server(self):
