@@ -75,7 +75,7 @@ class BatteryContoller(object):
             while(test != 0):
                 print("Waiting for server at {}, should take about 5-10 seconds".format(self.url))
                 time.sleep(2)
-                result = sock.connect_ex(("0.0.0.0", 8000))
+                result = self.sock.connect_ex(("0.0.0.0", 8000))
 
             print("Server successfully deployed !")
 
