@@ -52,29 +52,32 @@ class BatteryContoller(object):
         
         self.method = method
         self.url = url
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.launch_server()
         self.init_paths()
 
     def launch_server(self):
 
-        local_path = os.path.dirname(os.path.abspath(__file__))
-        path_to_assets = os.path.join(local_path, "assets")
+        test = self.sock.connect_ex(("0.0.0.0", 8000))
 
-        command = "julia --project={} {}/server.jl 2> /tmp/server.log &".format(path_to_assets, 
-            path_to_assets)
-        subprocess.call(command, shell=True)
+        if test == 0:
+            print("Server already deployed on port {}".format(self.url))
+        else:
+            local_path = os.path.dirname(os.path.abspath(__file__))
+            path_to_assets = os.path.join(local_path, "assets")
+            command = "julia --project={} {}/server.jl 2> /tmp/server.log &".format(path_to_assets, 
+                path_to_assets)
 
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(("0.0.0.0", 8000))
+            subprocess.call(command, shell=True)
+            test = self.sock.connect_ex(("0.0.0.0", 8000))
+            # wait for server deployment
+            while(test != 0):
+                print("Waiting for server at {}, should take about 5-10 seconds".format(self.url))
+                time.sleep(2)
+                result = sock.connect_ex(("0.0.0.0", 8000))
 
-        # wait for server deployment
-        while(result != 0):
-            print("Waiting for server at {}, should take about 5-10 seconds".format(self.url))
-            time.sleep(2)
-            result = sock.connect_ex(("0.0.0.0", 8000))
-
-        print("Server successfully deployed !")
+            print("Server successfully deployed !")
 
     def init_paths(self):
 
