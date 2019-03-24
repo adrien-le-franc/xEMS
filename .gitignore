@@ -12,3 +12,7 @@ simulate/assets/vopt/*
 
 simulate/__pycache__/*
 *.pyc
+
+simulate/assets/methods/*/timer.jld
+simulate/assets/methods/*/results.csv
+simulate/assets/methods/*/vopt

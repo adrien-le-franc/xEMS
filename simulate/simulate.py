@@ -6,6 +6,7 @@ import time
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import argparse
 
 from battery_controller import BatteryContoller
 from battery import Battery
@@ -152,11 +153,23 @@ class Simulation(object):
 
 if __name__ == '__main__':
 
-    start = time.time()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--method', type=str, required=True, 
+        help="name of method folder to be found at assets/methods/xxx")
+    args = parser.parse_args()
 
     simulation_dir = (Path(__file__)/os.pardir/os.pardir).resolve()
     data_dir = simulation_dir/'data'
     output_dir = simulation_dir/'output'
+
+    # check if method is implemented
+    try:
+        exist = os.path.isdir(simulation_dir/'simulate/assets/methods/{}'.format(args.method))
+        if not exist:
+            raise ValueError
+    except ValueError:
+        print('no method directory found at {}/simulate/assets/methods/{}'.format(simulation_dir,
+            args.method))
 
     # load available metadata to determine the runs
     metadata_path = data_dir/'metadata.csv'
@@ -166,7 +179,9 @@ if __name__ == '__main__':
     results = []
 
     # init battery controller
-    battery_controller = BatteryContoller()
+    battery_controller = BatteryContoller(args.method)
+
+    start = time.time()
 
     # # execute two runs with each battery for every row in the metadata file:
     for site_id, parameters in tqdm(metadata.iterrows(), desc='sites\t\t\t', total=metadata.shape[0]):
@@ -217,11 +232,14 @@ if __name__ == '__main__':
                         'score': (money_spent - money_no_batt) / np.abs(money_no_batt),
                     })
 
+                    print("SCORE: {}".format((money_spent - money_no_batt) / np.abs(money_no_batt)))
+
     # write all results out to a file
     results_df = pd.DataFrame(results).set_index('run_id')
     results_df = results_df[['site_id', 'battery_id', 'period_id', 'money_spent', 'money_no_batt', 'score']]
-    results_df.to_csv(output_dir/'results.csv')
+    results_df.to_csv(simulation_dir/'simulate/assets/methods/{}'.format(args.method)/'results.csv')
 
+    battery_controller.finish()
     elapsed = time.time() - start
     hour = int(elapsed/3600.)
     minute = int(elapsed/60.)
