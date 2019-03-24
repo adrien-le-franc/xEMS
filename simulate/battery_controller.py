@@ -70,9 +70,11 @@ class BatteryContoller(object):
 
         # wait for server deployment
         while(result != 0):
-            print("Waiting for server at {}, should take about 5 seconds".format(self.url))
+            print("Waiting for server at {}, should take about 5-10 seconds".format(self.url))
             time.sleep(2)
             result = sock.connect_ex(("0.0.0.0", 8000))
+
+        print("Server successfully deployed !")
 
     def init_paths(self):
 
