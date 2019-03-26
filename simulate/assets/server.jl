@@ -6,8 +6,9 @@
 using JSON, HTTP
 using JLD
 using StoOpt
+using Dates
 
-### init battery parameters
+### init fixed simulation parameters
 
 const horizon = Int(10*60*24/15)
 const dt = 15/60
@@ -18,32 +19,33 @@ const rc = Ref(0.95)
 const rd = Ref(0.95)
 const u_max = Ref(power.x*dt)
 
-const states = Grid(0:0.05:1)
-const state_steps = StoOpt.grid_steps(states)
 const controls = Grid(-1:0.02:1)
 const control_iterator = StoOpt.run(controls)
 
-### init data selection
+### init variables for simulation
 
 const path_to_data = Ref("")
 const path_to_method = Ref("")
 const site_id = Ref("")
 const battery_id = Ref("")
 
+const offline_laws = Ref(Dict())
+const period_noise = Ref(Noise(Array{Float64}(undef, 0, 0),
+	Array{Float64}(undef, 0, 0)))
 const periods_data = Ref(Dict())
 const period_prices = Ref(Price())
-const offline_laws = Ref(Dict())
+const t0 = Ref(Dates.now())
+const online = Ref(false)
 
 # note: improve by introducing vopt struct
 const vopt = Ref(Dict())
-const k = 10
 
 const vopt_timer = Ref(Float64[])
 const uopt_timer = Ref(Float64[])
 
 ### endpoints
 
-function set_paths(request::HTTP.Request)
+function init_server(request::HTTP.Request)
 	j = HTTP.queryparams(HTTP.URI(request.target))
 	path_to_data.x = j["data"]
 	path_to_method.x = j["method"]
@@ -89,6 +91,7 @@ function update_period(request::HTTP.Request)
 	price_buy = periods_data.x[period]["buy"]
 	price_sell = periods_data.x[period]["sell"]
 	period_prices.x = Price(price_buy, price_sell)
+	t0.x = periods_data.x[period]["t0"]
 
 	path_to_vopt = path_to_method.x*"/vopt/site_$(site_id.x)/battery_$(battery_id.x)"
 
@@ -98,9 +101,8 @@ function update_period(request::HTTP.Request)
 		path_to_vopt)
 
 	if !recycle_vopt
-		t0 = periods_data.x[period]["t0"]
-		noise = compute_noise(t0, offline_laws.x)
-		timer = @elapsed vopt.x = compute_value_functions(noise, controls, states, dynamics, 
+		period_noise.x = compute_noise(t0.x, offline_laws.x)
+		timer = @elapsed vopt.x = compute_value_functions(period_noise.x, controls, states, dynamics,
 			stage_cost, period_prices.x, horizon)
 		path = path_to_vopt*"/period_$(period).jld"
 		save(path, "vopt", vopt.x)
@@ -116,16 +118,26 @@ function compute_soc(request::HTTP.Request)
 	j = HTTP.queryparams(HTTP.URI(request.target))
 	current_soc = [parse(Float64, j["current_soc"])]
 	forecast_noise_15 = parse(Float64, j["forecast_noise_15"]) / 1000
+	previous_noise = parse(Float64, j["previous_noise"]) / 1000
 	time_step = parse(Int64, j["time_step"])
 	prices = period_prices.x[time_step]
 
-	timer = @elapsed uopt = compute_online_policy(current_soc, [forecast_noise_15], prices, 
-		states, control_iterator, vopt.x[time_step], dynamics, stage_cost, state_steps)
+	online.x = true
 
-	next_soc = dynamics(current_soc, uopt, 0.)
+	state = current_state(current_soc, previous_noise)
+	online_law = compute_online_law(time_step, forecast_noise_15)
+
+	timer = @elapsed uopt = compute_online_policy(time_step, state, online_law, 
+		prices, states, control_iterator, vopt.x[time_step], dynamics, stage_cost, state_steps)
+
+	println(uopt)
+
+	next_soc = dynamics_soc(current_soc, uopt[1])
 	if time_step % 5 == 0
 		push!(uopt_timer.x, timer)
 	end
+
+	online.x = false
 
 	return HTTP.Response(200, JSON.json(Float64(next_soc...)))
 end 
@@ -140,7 +152,7 @@ end
 ### make a router and add routes for endpoints
 
 const router = HTTP.Router()
-HTTP.@register(router, "GET", "/set_paths", set_paths)
+HTTP.@register(router, "GET", "/init_server", init_server)
 HTTP.@register(router, "GET", "/update_site", update_site)
 HTTP.@register(router, "GET", "/update_battery", update_battery)
 HTTP.@register(router, "GET", "/update_period", update_period)
@@ -149,4 +161,4 @@ HTTP.@register(router, "GET", "/finish", finish)
 
 ### create and run server
 
-HTTP.serve(router, "0.0.0.0", 8000; verbose=true)
+HTTP.serve(router, "0.0.0.0", 8000; verbose=true, readtimeout=0)

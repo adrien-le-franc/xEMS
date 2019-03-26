@@ -1,5 +1,5 @@
 from copy import deepcopy
-import os
+import os, sys
 from pathlib import Path
 import time
 
@@ -168,7 +168,7 @@ if __name__ == '__main__':
         if not exist:
             raise ValueError
     except ValueError:
-        print('no method directory found at {}/simulate/assets/methods/{}'.format(simulation_dir,
+        sys.exit('no method directory found at {}/simulate/assets/methods/{}'.format(simulation_dir,
             args.method))
 
     # load available metadata to determine the runs

@@ -6,6 +6,36 @@
 using StoOpt, ParserSchneider
 using Dates
 
+### set parameters, cost and dynamics for method
+
+const states = Grid(0:0.05:1)
+const state_steps = StoOpt.grid_steps(states)
+const k = 10
+
+function dynamics(t, x, u, w)
+        return x + (rc.x*max.(u, 0) - max.(-u, 0)/rd.x)*u_max.x/capacity.x
+end
+
+function stage_cost(t, price, x, u, w)
+	# return Float64
+	u = Float64(u...)
+    return price[1]*max(0., w[1] + u*u_max.x) - price[2]*max(0., - (w[1] + u*u_max.x))
+end
+
+### other method related functions
+
+function dynamics_soc(soc::Array{Float64,1}, uopt::Float64)
+	return soc[1] + (rc.x*max.(uopt[1], 0) - max.(-uopt[1], 0)/rd.x)*u_max.x/capacity.x 
+end
+
+function current_state(soc::Array{Float64,1}, previous_noise::Float64)
+	return soc
+end
+
+function compute_online_law(t::Int64, forecast_noise::Float64)
+	return Noise(reshape([forecast_noise], (1, 1)), reshape([1.], (1, 1)))
+end
+
 function is_summer(date::DateTime)
 	Dates.month(date) in 5:9
 end
@@ -98,14 +128,4 @@ function load_vopt(period::SubString{String}, period_prices::Price, periods_data
 
 	return false, Dict()
 
-end
-
-function dynamics(x, u, w)
-        return x + (rc.x*max.(u, 0) - max.(-u, 0)/rd.x)*u_max.x/capacity.x
-end
-
-function stage_cost(price, x, u, w)
-	# return Float64
-	u = Float64(u...)
-    return price[1]*max(0., w[1] + u*u_max.x) - price[2]*max(0., - (w[1] + u*u_max.x))
 end

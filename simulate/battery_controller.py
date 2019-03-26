@@ -55,7 +55,7 @@ class BatteryContoller(object):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.launch_server()
-        self.init_paths()
+        self.init_server()
 
     def launch_server(self):
 
@@ -79,7 +79,7 @@ class BatteryContoller(object):
 
             print("Server successfully deployed !")
 
-    def init_paths(self):
+    def init_server(self):
 
         local_path = os.path.dirname(os.path.abspath(__file__))
         self.path_to_method = os.path.join(local_path, "assets/methods/{}".format(self.method))
@@ -94,7 +94,7 @@ class BatteryContoller(object):
 
         # request to set paths
         args = {"data": self.path_to_data, "method": self.path_to_method}
-        r = requests.get(self.url+"/set_paths", params=args)
+        r = requests.get(self.url+"/init_server", params=args)
         
     def set_site(self, site_id):
 
@@ -137,7 +137,7 @@ class BatteryContoller(object):
         self.step = 1
 
         # request to send period id
-        r = requests.get(self.url+"/update_period/?period={}".format(period_id))
+        r = requests.get(self.url+"/update_period/?period={}".format(period_id), timeout=None)
 
     def propose_state_of_charge(self, timestamp, battery, actual_previous_load, 
         actual_previous_pv_production, price_buy, price_sell, load_forecast, pv_forecast):
@@ -146,9 +146,10 @@ class BatteryContoller(object):
         forecast_load_15 = load_forecast[0]
         forecast_pv_15 = pv_forecast[0]
         forecast_noise_15 = forecast_load_15 - forecast_pv_15
+        previous_noise = actual_previous_load - actual_previous_pv_production
 
         args = {"time_step": self.step, "current_soc": current_soc,
-            "forecast_noise_15": forecast_noise_15}
+            "previous_noise": previous_noise, "forecast_noise_15": forecast_noise_15}
         r = requests.get(self.url+"/compute_soc", params=args)
 
         target_soc = r.json()
