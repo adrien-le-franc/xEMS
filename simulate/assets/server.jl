@@ -139,7 +139,7 @@ function compute_soc(request::HTTP.Request)
 	timer = @elapsed uopt = compute_online_policy(time_step, state, online_law, 
 		prices, states, control_iterator, vopt.x[time_step], dynamics, stage_cost, state_steps)
 
-	println(uopt)
+	#println(uopt)
 
 	next_soc = dynamics_soc(current_soc, uopt[1])
 	if time_step % 5 == 0
