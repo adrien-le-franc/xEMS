@@ -96,10 +96,17 @@ function update_period(request::HTTP.Request)
 	path_to_vopt = path_to_method.x*"/vopt/site_$(site_id.x)/battery_$(battery_id.x)"
 
 	# if vopt exists -> use it !
+	path = path_to_vopt*"/period_$(period).jld"
+	if isfile(path)
+		vopt.x = load(path)["vopt"]
+		return HTTP.Response(200)
+	end
 
+	# else: try to recycle previous ones
 	recycle_vopt, vopt.x = load_vopt(period, period_prices.x, periods_data.x, 
 		path_to_vopt)
 
+	# else: compute it
 	if !recycle_vopt
 		period_noise.x = compute_noise(t0.x, offline_laws.x)
 		timer = @elapsed vopt.x = compute_value_functions(period_noise.x, controls, states, dynamics,
