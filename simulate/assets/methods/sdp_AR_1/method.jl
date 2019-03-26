@@ -18,7 +18,7 @@ const k = 5
 const offline_weights = Ref(Dict())
 const period_weights = Ref(Array{Float64}(undef, 0, 0))
 
-const use_forecast = false
+const use_forecast = true
 
 function dynamics(t, x, u, w)
 
@@ -27,6 +27,13 @@ function dynamics(t, x, u, w)
 
 	if use_forecast
 		if online.x
+			w = w[1]
+			if w > w_max.x
+				w = w_max.x
+			elseif w < w_min.x
+				w = w_min.x
+			end
+			w = (w-w_min.x) / (w_max.x-w_min.x)
 			return [x1, w[1]]
 		end
 	end
@@ -83,7 +90,7 @@ function compute_online_law(t::Int64, forecast_noise::Float64)
 	if use_forecast
 		return Noise(reshape([forecast_noise], (1, 1)), reshape([1.], (1, 1)))
 	end
-	return Noise(reshape(period_noise.x.w[t, :], (1, :)), reshape(period_noise.x.pw[t, :], (1, :))) 
+	return Noise(reshape([0.], (1, 1)), reshape([1.], (1, 1)))
 end
 
 function is_weekend(date::DateTime)

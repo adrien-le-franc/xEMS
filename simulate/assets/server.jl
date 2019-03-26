@@ -93,6 +93,9 @@ function update_period(request::HTTP.Request)
 	period_prices.x = Price(price_buy, price_sell)
 	t0.x = periods_data.x[period]["t0"]
 
+	# noise not necessary but some stuff needed for online steps inside
+	period_noise.x = compute_noise(t0.x, offline_laws.x)
+
 	path_to_vopt = path_to_method.x*"/vopt/site_$(site_id.x)/battery_$(battery_id.x)"
 
 	# if vopt exists -> use it !
@@ -108,7 +111,6 @@ function update_period(request::HTTP.Request)
 
 	# else: compute it
 	if !recycle_vopt
-		period_noise.x = compute_noise(t0.x, offline_laws.x)
 		timer = @elapsed vopt.x = compute_value_functions(period_noise.x, controls, states, dynamics,
 			stage_cost, period_prices.x, horizon)
 		path = path_to_vopt*"/period_$(period).jld"
